@@ -1,0 +1,52 @@
+# This workflow will build a Java project with Maven, and cache/restore any dependencies to improve the workflow execution time
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-java-with-maven
+
+# This workflow uses actions that are not certified by GitHub.
+# They are provided by a third-party and are governed by
+# separate terms of service, privacy policy, and support
+# documentation.
+
+name: Java CI with Maven
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+
+
+  gatling-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '17' 
+          distribution: 'temurin'
+
+      # Cache dependencies to speed up subsequent runs
+      - name: Cache Gatling dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.m2/repository
+            ~/.ivy2/cache
+            ~/.sbt/boot
+            ~/.coursier
+          key: ${{ runner.os }}-gatling-${{ hashFiles('**/pom.xml', '**/build.sbt') }}
+          # Use restore-keys to find a cache in case of a cache miss
+          restore-keys: |
+            ${{ runner.os }}-gatling-
+
+      - name: Run Gatling test
+        run: mvn gatling:test
+
+      - name: Upload Gatling reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: gatling-reports
+          path: |
+            target/gatling/**
+
